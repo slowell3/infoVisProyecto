@@ -18,6 +18,7 @@ SVG1.attr("width", WIDTH_VIS_1).attr("height", HEIGHT_VIS_1);
 SVG2.attr("width", WIDTH_VIS_2).attr("height", HEIGHT_VIS_2);
 SVG3.attr("width", WIDTH_VIS_3).attr("height", HEIGHT_VIS_3);
 
+
 crearVis3();
 
 //Vis 1: Círculo
@@ -29,8 +30,6 @@ crearVis3();
 //fuente: https://d3-graph-gallery.com/graph/heatmap_style.html
 
 
-
-//something with dataset
 function crearVis3() {
     d3.csv(CEREAL, d3.autoType).then(cereals => {
         console.log(cereals);
@@ -69,5 +68,3 @@ function crearVis3() {
             .style("fill", d => colorMap(d.rating)); //this needs to be number of cereals in that bracket
         });
 }
-/*
-*/

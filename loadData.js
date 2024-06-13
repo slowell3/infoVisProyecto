@@ -53,16 +53,18 @@ d3.csv(datasetPath, parseData)
             .attr("stroke", "black")
             .attr("stroke-width", 1)
             .on("mouseover", (event, d) => {
-                d3.select("#tooltip")
+                const tooltip = d3.select("#tooltip");
+                tooltip
                     .style("visibility", "visible")
                     .html(`Nombre: ${d.name}<br>Calorías: ${d.calories}<br>Vitaminas: ${d.vitamins}`);
                 
+                const tooltipWidth = tooltip.node().offsetWidth;
+                const tooltipHeight = tooltip.node().offsetHeight;
+                tooltip
+                    .style("top", `${(height / 2) - (tooltipHeight / 2)}px`)
+                    .style("left", `${(width / 2) - (tooltipWidth / 2)}px`);
+                
                 arcs.attr("fill-opacity", o => o.mfr === d.mfr ? 1 : 0.2);
-            })
-            .on("mousemove", (event) => {
-                d3.select("#tooltip")
-                    .style("top", `${event.pageY + 10}px`)
-                    .style("left", `${event.pageX + 10}px`);
             })
             .on("mouseout", () => {
                 d3.select("#tooltip").style("visibility", "hidden");

@@ -1,24 +1,104 @@
 const CEREAL = "cereal.csv";
 
-const SVG1 = d3.select("#vis-1").append("svg");
-const SVG2 = d3.select("#vis-2").append("svg");
-const SVG3 = d3.select("#vis-3").append("svg");
-
 const WIDTH_VIS_1 = 800;
-const HEIGHT_VIS_1 = 400;
-
+const HEIGHT_VIS_1 = 800;
 const WIDTH_VIS_2 = 800;
 const HEIGHT_VIS_2 = 400;
-
 const WIDTH_VIS_3 = 800;
 const HEIGHT_VIS_3 = 400;
-const margins3 = [30, 30, 30, 30]; //LEFT, RIGHT, TOP, BOTTOM
+const margins3 = [30, 30, 30, 30]; // LEFT, RIGHT, TOP, BOTTOM
 
-SVG1.attr("width", WIDTH_VIS_1).attr("height", HEIGHT_VIS_1);
-SVG2.attr("width", WIDTH_VIS_2).attr("height", HEIGHT_VIS_2);
-SVG3.attr("width", WIDTH_VIS_3).attr("height", HEIGHT_VIS_3);
+function crearVis1() {
+    const parseData = d => ({
+        name: d.name,
+        mfr: d.mfr,
+        calories: +d.calories,
+        vitamins: +d.vitamins,
+        rating: +d.rating,
+    });
 
-crearVis3();
+    const colors = {
+        "A": "#e37676",
+        "G": "#e8c285",
+        "K": "#dbf595",
+        "N": "#a1cc9f",
+        "P": "#7bdbd2",
+        "Q": "#7587bf",
+        "R": "#ad63ba"
+    };
+
+    const manufacturerNames = {
+        "A": "American Home Food Products",
+        "G": "General Mills",
+        "K": "Kellogg's",
+        "N": "Nabisco",
+        "P": "Post",
+        "Q": "Quaker Oats",
+        "R": "Ralston Purina"
+    };
+
+    d3.csv(CEREAL, parseData)
+        .then(data => {
+            data.sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabéticamente
+
+            const svg = d3.select("#chart-radial");
+            const width = svg.attr("width");
+            const height = svg.attr("height");
+            const radius = Math.min(width, height) / 2 - 130; // Ajustar el radio para evitar corte
+
+            const arc = d3.arc()
+                .innerRadius(radius - 100)
+                .outerRadius(d => radius - 100 + d.rating * 2.5) // Ajustar el tamaño de las barras
+                .startAngle((d, i) => (i * 2 * Math.PI) / data.length)
+                .endAngle((d, i) => ((i + 1) * 2 * Math.PI) / data.length);
+
+            const arcs = svg.append("g")
+                .attr("transform", `translate(${width / 2}, ${height / 2})`)
+                .selectAll("path")
+                .data(data)
+                .enter().append("path")
+                .attr("d", arc)
+                .attr("fill", d => colors[d.mfr])
+                .attr("stroke", "black")
+                .attr("stroke-width", 1)
+                .on("mouseover", (event, d) => {
+                    const tooltip = d3.select("#tooltip-radial");
+                    tooltip
+                        .style("visibility", "visible")
+                        .html(`Nombre: ${d.name}<br>Calorías: ${d.calories}<br>Vitaminas: ${d.vitamins}`);
+                    
+                    const tooltipWidth = tooltip.node().offsetWidth;
+                    const tooltipHeight = tooltip.node().offsetHeight;
+                    tooltip
+                        .style("top", `${(height / 2) - (tooltipHeight / 2)}px`)
+                        .style("left", `${(width / 2) - (tooltipWidth / 2)}px`);
+                    
+                    arcs.attr("fill-opacity", o => o.mfr === d.mfr ? 1 : 0.2);
+                })
+                .on("mouseout", () => {
+                    d3.select("#tooltip-radial").style("visibility", "hidden");
+                    arcs.attr("fill-opacity", 1);
+                });
+
+            // Leyenda
+            const legend = d3.select("#legend-radial");
+            const uniqueMfrs = [...new Set(data.map(d => d.mfr))];
+            uniqueMfrs.forEach(mfr => {
+                const item = legend.append("div").attr("class", "legend-item");
+                item.append("div")
+                    .attr("class", "legend-color")
+                    .style("background-color", colors[mfr]);
+                item.append("span").text(manufacturerNames[mfr]);
+            });
+        })
+        .catch(error => {
+            console.log("Error al cargar el dataset:", error);
+        });
+}
+
+function crearVis2() {
+    // Aquí iría tu código para la segunda visualización
+}
 
 function crearVis3() {
     d3.csv(CEREAL, d3.autoType).then(cereals => {
@@ -58,7 +138,7 @@ function crearVis3() {
             .domain(d3.range(numBins))
             .range([margins3[0], WIDTH_VIS_3 - margins3[1]])
             .padding(0.01);
-        SVG3.append("g")
+        d3.select("#chart-heatmap").append("g")
             .attr("transform", `translate(0, ${HEIGHT_VIS_3 - margins3[3]})`)
             .call(d3.axisBottom(x3).tickFormat((d, i) => {
                 const bin = sugarBins[i];
@@ -70,7 +150,7 @@ function crearVis3() {
             .domain(d3.range(numBins))
             .range([HEIGHT_VIS_3 - margins3[2], margins3[3]])
             .padding(0.01);
-        SVG3.append("g")
+        d3.select("#chart-heatmap").append("g")
             .attr("transform", `translate(${margins3[0]},0)`)
             .call(d3.axisLeft(y3).tickFormat((d, i) => {
                 const bin = ratingBins[i];
@@ -83,7 +163,7 @@ function crearVis3() {
             .range(["white", "#DA4167"]);
 
         // Draw rectangles
-        SVG3.selectAll("rect")
+        d3.select("#chart-heatmap").selectAll("rect")
             .data(cerealCount.flat().map((count, i) => ({
                 x: i % numBins,
                 y: Math.floor(i / numBins),
@@ -97,3 +177,8 @@ function crearVis3() {
             .style("fill", d => colorMap(d.count));
     });
 }
+
+// Llamar a las funciones para crear las visualizaciones
+crearVis1();
+crearVis2();
+crearVis3();

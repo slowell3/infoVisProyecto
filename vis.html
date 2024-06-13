@@ -1,39 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
-    <script src="https://d3js.org/d3.v7.js"></script>
-    <title>Visualización de Cereales</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            margin: 0;
+            padding: 20px;
+        }
+        .chart-container {
+            position: relative;
+            width: 800px;
+            height: 800px;
+            margin-top: 20px;
+            margin-bottom: 50px; /* Añadido margen inferior para evitar superposición */
+        }
+        .tooltip {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ccc;
+            padding: 10px;
+            box-shadow: 0px 0px 5px #aaa;
+            pointer-events: none;
+            visibility: hidden;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .legend-item {
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+        }
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+        h2 {
+            margin-top: 40px; /* Añadido margen superior para separar las visualizaciones */
+        }
+        .divLine {
+            width: 100%;
+            height: 2px;
+            background-color: #ccc;
+            margin: 20px 0;
+        }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+    </style>
 </head>
-
 <body>
     <div class="container">
-        <h1>Visualización de Cereales</h1>
+        <h1>Visualizaciones</h1>
 
-        <h2>Visualización 1 - Marcas de Cereales</h2>
-        <ul class="legend textStart">
-        </ul>
-        <div id="vis-1">
+        <h2>Visualización 1 - Mapa Radial de Marcas de Cereales</h2>
+        <div id="vis-1" class="chart-container">
+            <svg id="chart-radial" width="800" height="800"></svg>
+            <div class="tooltip" id="tooltip-radial"></div>
+            <div class="legend" id="legend-radial"></div>
         </div>
-        
 
         <div class="divLine"></div>
         <h2>Visualización 2 - Valores Nutricionales</h2>
-        
-        <div id="vis-2">
+        <div id="vis-2" class="chart-container">
+            <!-- Aquí iría tu segundo gráfico -->
         </div>
 
         <div class="divLine"></div>
         <h2>Visualización 3 - Mapa de Calor</h2>
-        
-        <div id="vis-3">
+        <div id="vis-3" class="chart-container">
+            <svg id="chart-heatmap" width="800" height="400"></svg>
+            <div class="tooltip" id="tooltip-heatmap"></div>
         </div>
     </div>
     <script src="main.js"></script>
 </body>
-
 </html>

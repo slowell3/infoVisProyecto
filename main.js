@@ -1,14 +1,16 @@
 const CEREAL = "cereal.csv";
 
-const WIDTH_VIS_1 = 900;
-const HEIGHT_VIS_1 = 900;
+const WIDTH_VIS_1 = 1000;
+const HEIGHT_VIS_1 = 100;
 const WIDTH_VIS_2 = 800;
 const HEIGHT_VIS_2 = 800;
 const WIDTH_VIS_3 = 800;
 const HEIGHT_VIS_3 = 400;
 const margins3 = [30, 30, 30, 30]; // LEFT, RIGHT, TOP, BOTTOM
 
-const SVG1 = d3.select("#vis-1").append("svg");
+const SVG1 = d3.select("#vis-1").append("svg")
+    .attr("width", "100%")
+    .attr("height", "100%");
 const SVG2 = d3.select("#vis-2").append("svg");
 const SVG3 = d3.select("#vis-3").append("svg");
 
@@ -58,10 +60,10 @@ function crearVis1() {
         .then(data => {
             data.sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabéticamente
 
-            const svg = d3.select("#chart-radial");
+            const svg = d3.select("#vis-1 svg");
             const width = svg.attr("width");
             const height = svg.attr("height");
-            const radius = Math.min(width, height) / 2 - 140; // Ajustar el radio para evitar corte
+            const radius = Math.min(width, height) / 2 - 130; // Ajustar el radio para evitar corte
 
             const arc = d3.arc()
                 .innerRadius(radius - 100)
@@ -70,7 +72,7 @@ function crearVis1() {
                 .endAngle((d, i) => ((i + 1) * 2 * Math.PI) / data.length);
 
             const arcs = svg.append("g")
-                .attr("transform", `translate(${width / 2}, ${height / 2})`)
+                .attr("transform", `translate(${width/ 2}, ${height / 2})`)
                 .selectAll("path")
                 .data(data)
                 .enter().append("path")
@@ -130,31 +132,29 @@ function crearVis2(data) {
     const nutrientsToShow = ["sugars", "protein", "fiber", "carbo"];
 
     // Normalizar los datos
-    // lo hice porque sino quedaban lineas muy largas
     data = data.map(d => {
-        const normalized = nutrientsToShow.reduce((acc, n) => {
-            acc[n] = +d[n];
-            return acc;
-        }, {});
-        return Object.assign({}, d, normalized);
+        return nutrientsToShow.reduce((acc, n) => ({ ...acc, [n]: +d[n] }), { name: d.name });
     });
 
     const svg = d3.select("#chart-nutrition");
     const width = svg.attr("width");
     const height = svg.attr("height");
 
+    // Ajustar el tamaño del SVG basado en el número de filas
     const numRows = Math.ceil(data.length / 5);
-    const rowHeight = height / numRows;
-    const rowWidth = width;
+    const rowHeight = 350; // Ajusta según necesidades para más espacio
+    svg.attr("height", numRows * rowHeight); // Ajusta altura dinámicamente
+
+    const maxBarLength = 300; // Máximo largo de las barras
 
     const x0 = d3.scaleBand()
         .domain(nutrientsToShow)
-        .range([0, rowWidth / 5])
+        .range([0, width / 5])
         .padding(0.1);
 
     const y = d3.scaleLinear()
         .domain([0, d3.max(data, cereal => d3.max(nutrientsToShow, n => cereal[n]))])
-        .range([rowHeight, 0]);
+        .range([maxBarLength, 0]);
 
     const groups = data.map((d, i) => ({
         ...d,
@@ -165,7 +165,7 @@ function crearVis2(data) {
     const groupSelection = svg.selectAll("g")
         .data(groups)
         .enter().append("g")
-        .attr("transform", d => `translate(${d.col * (rowWidth / 5)}, ${d.row * rowHeight})`);
+        .attr("transform", d => `translate(${d.col * (width / 5)}, ${d.row * rowHeight})`);
 
     groupSelection.append("g")
         .selectAll("rect")
@@ -174,18 +174,18 @@ function crearVis2(data) {
         .attr("x", d => x0(d.key))
         .attr("y", d => y(d.value))
         .attr("width", x0.bandwidth())
-        .attr("height", d => rowHeight - y(d.value))
+        .attr("height", d => maxBarLength - y(d.value))
         .attr("fill", d => colorsNutrients(d.key));
 
     groupSelection.append("text")
-        .attr("x", (rowWidth / 10))
-        .attr("y", -10)
+        .attr("x", width / 10)
+        .attr("y", maxBarLength + 20) // Posicionar el nombre debajo de cada gráfico con un espacio
         .attr("text-anchor", "middle")
         .text(d => d.name);
 
     // Añadir leyenda
-    const legend = d3.select("#legend-nutrition");
-    legend.selectAll("*").remove();
+    const legend = d3.select("#legend-nutrition")
+        .style("transform", `translateY(${numRows * rowHeight + 20}px)`); // Mover la leyenda debajo de todos los gráficos
 
     legend.selectAll("div")
         .data(nutrientsToShow)
@@ -199,6 +199,8 @@ function crearVis2(data) {
                 .text(n);
         });
 }
+
+
 
 function crearVis3() {
     d3.csv(CEREAL, d3.autoType).then(cereals => {

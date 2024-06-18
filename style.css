@@ -7,13 +7,6 @@ body {
     margin: 0;
     padding: 20px;
 }
-.chart-container {
-    position: relative;
-    width: 800px;
-    height: 800px;
-    margin-top: 20px;
-    margin-bottom: 50px; /* Añadido margen inferior para evitar superposición */
-}
 .tooltip {
     position: absolute;
     background-color: white;
@@ -51,7 +44,18 @@ h2 {
     background-color: #ccc;
     margin: 20px 0;
 }
-.container {
-    width: 100%;
-    max-width: 1200px;
+.chart-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;  
+    background-color: #f0f0f0; 
+    width: 100%;              
+    height: 100%;             
+    margin-bottom: 20px;
 }
+
+#vis-1, #vis-2, #vis-3 {
+    width: 100%; 
+    height: 100%; 
+    background-color: #f0f0f0;   }

@@ -217,6 +217,7 @@ function crearVis3() {
             .domain(sugarExtent)
             .thresholds(d3.range(sugarExtent[0], sugarExtent[1], (sugarExtent[1] - sugarExtent[0]) / numBins))
             (cereals.map(d => d.sugars));
+        console.log(sugarBins);
 
         const ratingBins = d3.histogram()
             .domain(ratingExtent)
@@ -224,16 +225,27 @@ function crearVis3() {
             (cereals.map(d => d.rating));
 
         // Create a 2D array to count cereals in each bin
-        const cerealCount = Array.from({ length: numBins }, () => Array(numBins).fill(0));
-
-        cereals.map(cereal => {
+        const cerealCount = Array.from({ length: numBins }, () =>
+            Array.from({ length: numBins }, () => [0, []])
+          );
+          
+          let maxCount = 0;
+          
+          cereals.map(cereal => {
             const sugarIndex = sugarBins.findIndex(bin => bin.x0 <= cereal.sugars && cereal.sugars < bin.x1);
             const ratingIndex = ratingBins.findIndex(bin => bin.x0 <= cereal.rating && cereal.rating < bin.x1);
-
+          
             if (sugarIndex >= 0 && ratingIndex >= 0) {
-                cerealCount[sugarIndex][ratingIndex]++;
+              cerealCount[sugarIndex][ratingIndex][0]++;
+              cerealCount[sugarIndex][ratingIndex][1].push(cereal.name);
+          
+              if (cerealCount[sugarIndex][ratingIndex][0] >= maxCount) {
+                maxCount = cerealCount[sugarIndex][ratingIndex][0];
+              }
             }
-        });
+          });
+
+        console.log(cerealCount);
 
         const svg = d3.select("#chart-heatmap");
         svg.selectAll("*").remove(); // Limpiar la visualización anterior
@@ -265,28 +277,86 @@ function crearVis3() {
                 const bin = ratingBins[i];
                 return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
             }));
+        
+        // Títulos para ejes
+        //fuente: https://stackoverflow.com/questions/11189284/d3-axis-labeling
+        SVG3.append("text")
+            .attr("class", "xAxis")
+            .attr("text-anchor", "end")
+            .attr("x", width)
+            .attr("y", 20)
+            .text("Gramos de Azúcar por Porción");
+        
+        //this one is kinda janky - fix if time
+        svg.append("text")
+            .attr("class", "yAxis")
+            .attr("text-anchor", "end")
+            .attr("y", 10)
+            .attr("x", 180)
+            .attr("dy", ".75em")
+            //.attr("transform", "rotate(-90)")
+            .text("Porcentaje de Valoración");
 
         // Scale for color
         const colorMap = d3.scaleLinear()
-            .domain([0, d3.max(cerealCount.flat())])
+            .domain([0, maxCount]) 
             .range(["white", "#DA4167"]);
+            console.log(maxCount)
+        
+        //Scale for hover color (blue)
+        const colorHover = d3.scaleLinear()
+            .domain([0, maxCount]) 
+            .range(["white", "#004b3b"]);
+            console.log(maxCount)
+
+        //tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
+        let tooltip = d3.select("body").append("div")
+            .style("opacity", 0)
+            .style("width", 200)
+            .style("height", 200)
+            .style("position", "absolute")
+            .style("background", "#96ceb4");
 
         // Draw rectangles
         svg.selectAll("rect")
-            .data(cerealCount.flat().map((count, i) => ({
+            .data(cerealCount.flat().map(([count, names], i) => ({
                 x: i % numBins,
                 y: Math.floor(i / numBins),
-                count: count
+                count: count,
+                names: names
             })))
-            .join("rect")
+            .join(enter => {
+                const rect = enter.append("rect")
             .attr("x", d => x3(d.x))
             .attr("y", d => y3(d.y))
             .attr("width", x3.bandwidth())
             .attr("height", y3.bandwidth())
-            .style("fill", d => colorMap(d.count));
+            .style("fill", d => colorMap(d.count))
+            //tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
+            rect
+                .on("mouseover", (event, d) => {
+                    svg.selectAll("rect")
+                        
+                    d3.select(event.currentTarget)
+                        .style("fill", d => colorHover(d.count));
+
+                    tooltip
+                        .html(`Cereales: ${d.names}
+                            `)//OPCIONAL: azúcar y ratings info <brAzúcar: ${}
+                        .style("opacity", 1)
+                        .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+
+                }).on("mouseout", (event, d) => {
+                    tooltip.style("opacity", 0);
+                    svg.selectAll("rect")
+                        .style("fill", d => colorMap(d.count));
+                })
+            })
     });
 }
 
 // Llamar a las funciones para crear las visualizaciones
 crearVis1();
+//crearVis2();
 crearVis3();

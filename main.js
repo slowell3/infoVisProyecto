@@ -23,19 +23,24 @@ const colorsNutrients = d3.scaleOrdinal()
     .domain(nutrients)
     .range(["#FFA07A", "#98FB98", "#DA70D6", "#8A2BE2"]);
 
-function crearVis1() {
-    const parseData = d => ({
-        name: d.name,
-        mfr: d.mfr,
-        calories: +d.calories,
-        vitamins: +d.vitamins,
-        rating: +d.rating,
-        sugars: +d.sugars,
-        protein: +d.protein,
-        fiber: +d.fiber,
-        carbo: +d.carbo
-    });
+const parseData = d => ({
+    name: d.name,
+    mfr: d.mfr,
+    calories: +d.calories,
+    vitamins: +d.vitamins,
+    rating: +d.rating,
+    sugars: +d.sugars,
+    protein: +d.protein,
+    fiber: +d.fiber,
+    carbo: +d.carbo
+});
 
+d3.csv(CEREAL, parseData).then(data => {
+    crearVis1(data);
+    crearVis3(data);
+});
+
+function crearVis1(data) {
     const colors = {
         "A": "#e37676",
         "G": "#e8c285",
@@ -56,71 +61,65 @@ function crearVis1() {
         "R": "Ralston Purina"
     };
 
-    d3.csv(CEREAL, parseData)
-        .then(data => {
-            data.sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabéticamente
+    data.sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabéticamente
 
-            const svg = d3.select("#vis-1 svg");
-            const width = svg.attr("width");
-            const height = svg.attr("height");
-            const radius = Math.min(width, height) / 2 - 130; // Ajustar el radio para evitar corte
+    const svg = d3.select("#vis-1 svg");
+    const width = svg.attr("width");
+    const height = svg.attr("height");
+    const radius = Math.min(width, height) / 2 - 130; // Ajustar el radio para evitar corte
 
-            const arc = d3.arc()
-                .innerRadius(radius - 100)
-                .outerRadius(d => radius - 100 + d.rating * 2.5) // Ajustar el tamaño de las barras
-                .startAngle((d, i) => (i * 2 * Math.PI) / data.length)
-                .endAngle((d, i) => ((i + 1) * 2 * Math.PI) / data.length);
+    const arc = d3.arc()
+        .innerRadius(radius - 100)
+        .outerRadius(d => radius - 100 + d.rating * 2.5) // Ajustar el tamaño de las barras
+        .startAngle((d, i) => (i * 2 * Math.PI) / data.length)
+        .endAngle((d, i) => ((i + 1) * 2 * Math.PI) / data.length);
 
-            const arcs = svg.append("g")
-                .attr("transform", `translate(${width/ 2}, ${height / 2})`)
-                .selectAll("path")
-                .data(data)
-                .enter().append("path")
-                .attr("d", arc)
-                .attr("fill", d => colors[d.mfr])
-                .attr("stroke", "black")
-                .attr("stroke-width", 1)
-                .on("mouseover", (event, d) => {
-                    const tooltip = d3.select("#tooltip-radial");
-                    tooltip
-                        .style("visibility", "visible")
-                        .html(`Nombre: ${d.name}<br>Calorías: ${d.calories}<br>Vitaminas: ${d.vitamins}`);
-                    
-                    const tooltipWidth = tooltip.node().offsetWidth;
-                    const tooltipHeight = tooltip.node().offsetHeight;
-                    tooltip
-                        .style("top", `${(height / 2) - (tooltipHeight / 2)}px`)
-                        .style("left", `${(width / 2) - (tooltipWidth / 2)}px`);
-                    
-                    arcs.attr("fill-opacity", o => o.mfr === d.mfr ? 1 : 0.2);
-                })
-                .on("mouseout", () => {
-                    d3.select("#tooltip-radial").style("visibility", "hidden");
-                    arcs.attr("fill-opacity", 1);
-                })
-                .on("click", (event, d) => {
-                    const filteredData = data.filter(c => c.mfr === d.mfr);
-                    crearVis2(filteredData);
-                });
-
-            // Leyenda
-            const legend = d3.select("#legend-radial");
-            const uniqueMfrs = [...new Set(data.map(d => d.mfr))];
-
-            legend.selectAll("div")
-                .data(uniqueMfrs)
-                .enter().append("div")
-                .attr("class", "legend-item")
-                .each(function (mfr) {
-                    d3.select(this).append("div")
-                        .attr("class", "legend-color")
-                        .style("background-color", colors[mfr]);
-                    d3.select(this).append("span")
-                        .text(manufacturerNames[mfr]);
-                });
+    const arcs = svg.append("g")
+        .attr("transform", `translate(${width / 2}, ${height / 2})`)
+        .selectAll("path")
+        .data(data)
+        .enter().append("path")
+        .attr("d", arc)
+        .attr("fill", d => colors[d.mfr])
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .on("mouseover", (event, d) => {
+            const tooltip = d3.select("#tooltip-radial");
+            tooltip
+                .style("visibility", "visible")
+                .html(`Nombre: ${d.name}<br>Calorías: ${d.calories}<br>Vitaminas: ${d.vitamins}`);
+            
+            tooltip
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+            
+            arcs.attr("fill-opacity", o => o.mfr === d.mfr ? 1 : 0.2);
         })
-        .catch(error => {
-            console.log("Error al cargar el dataset:", error);
+        .on("mouseout", () => {
+            d3.select("#tooltip-radial").style("visibility", "hidden");
+            arcs.attr("fill-opacity", 1);
+        })
+        .on("click", (event, d) => {
+            const filteredData = data.filter(c => c.mfr === d.mfr);
+            console.log(filteredData);
+            crearVis2(filteredData);
+            crearVis3(filteredData);
+        });
+
+    // Leyenda
+    const legend = d3.select("#legend-radial");
+    const uniqueMfrs = [...new Set(data.map(d => d.mfr))];
+
+    legend.selectAll("div")
+        .data(uniqueMfrs)
+        .enter().append("div")
+        .attr("class", "legend-item")
+        .each(function (mfr) {
+            d3.select(this).append("div")
+                .attr("class", "legend-color")
+                .style("background-color", colors[mfr]);
+            d3.select(this).append("span")
+                .text(manufacturerNames[mfr]);
         });
 }
 
@@ -200,163 +199,154 @@ function crearVis2(data) {
         });
 }
 
+function crearVis3(cereals) {
+    console.log(cereals);
 
+    // Define the number of bins
+    const numBins = 10;
 
-function crearVis3() {
-    d3.csv(CEREAL, d3.autoType).then(cereals => {
-        console.log(cereals);
+    // Create bins for sugars
+    const sugarExtent = d3.extent(cereals, d => d.sugars);
+    const ratingExtent = d3.extent(cereals, d => d.rating);
 
-        // Define the number of bins
-        const numBins = 10;
+    const sugarBins = d3.histogram()
+        .domain(sugarExtent)
+        .thresholds(d3.range(sugarExtent[0], sugarExtent[1], (sugarExtent[1] - sugarExtent[0]) / numBins))
+        (cereals.map(d => d.sugars));
+    console.log(sugarBins);
 
-        // Create bins for sugars
-        const sugarExtent = d3.extent(cereals, d => d.sugars);
-        const ratingExtent = d3.extent(cereals, d => d.rating);
+    const ratingBins = d3.histogram()
+        .domain(ratingExtent)
+        .thresholds(d3.range(ratingExtent[0], ratingExtent[1], (ratingExtent[1] - ratingExtent[0]) / numBins))
+        (cereals.map(d => d.rating));
 
-        const sugarBins = d3.histogram()
-            .domain(sugarExtent)
-            .thresholds(d3.range(sugarExtent[0], sugarExtent[1], (sugarExtent[1] - sugarExtent[0]) / numBins))
-            (cereals.map(d => d.sugars));
-        console.log(sugarBins);
-
-        const ratingBins = d3.histogram()
-            .domain(ratingExtent)
-            .thresholds(d3.range(ratingExtent[0], ratingExtent[1], (ratingExtent[1] - ratingExtent[0]) / numBins))
-            (cereals.map(d => d.rating));
-
-        // Create a 2D array to count cereals in each bin
-        const cerealCount = Array.from({ length: numBins }, () =>
-            Array.from({ length: numBins }, () => [0, []])
-          );
-          
-          let maxCount = 0;
-          
-          cereals.map(cereal => {
-            const sugarIndex = sugarBins.findIndex(bin => bin.x0 <= cereal.sugars && cereal.sugars < bin.x1);
-            const ratingIndex = ratingBins.findIndex(bin => bin.x0 <= cereal.rating && cereal.rating < bin.x1);
-          
-            if (sugarIndex >= 0 && ratingIndex >= 0) {
-              cerealCount[sugarIndex][ratingIndex][0]++;
-              cerealCount[sugarIndex][ratingIndex][1].push(cereal.name);
-          
-              if (cerealCount[sugarIndex][ratingIndex][0] >= maxCount) {
+    // Create a 2D array to count cereals in each bin
+    const cerealCount = Array.from({ length: numBins }, () =>
+        Array.from({ length: numBins }, () => [0, []])
+    );
+    
+    let maxCount = 0;
+    
+    cereals.map(cereal => {
+        const sugarIndex = sugarBins.findIndex(bin => bin.x0 <= cereal.sugars && cereal.sugars < bin.x1);
+        const ratingIndex = ratingBins.findIndex(bin => bin.x0 <= cereal.rating && cereal.rating < bin.x1);
+    
+        if (sugarIndex >= 0 && ratingIndex >= 0) {
+            cerealCount[sugarIndex][ratingIndex][0]++;
+            cerealCount[sugarIndex][ratingIndex][1].push(cereal.name);
+    
+            if (cerealCount[sugarIndex][ratingIndex][0] >= maxCount) {
                 maxCount = cerealCount[sugarIndex][ratingIndex][0];
-              }
             }
-          });
+        }
+    });
 
-        console.log(cerealCount);
+    console.log(cerealCount);
 
-        const svg = d3.select("#chart-heatmap");
-        svg.selectAll("*").remove(); // Limpiar la visualización anterior
-        const width = svg.attr("width");
-        const height = svg.attr("height");
+    const svg = d3.select("#chart-heatmap");
+    svg.selectAll("*").remove(); // Limpiar la visualización anterior
+    const width = svg.attr("width");
+    const height = svg.attr("height");
 
-        // Scale for x axis (sugar)
-        const x3 = d3.scaleBand()
-            .domain(d3.range(numBins))
-            .range([margins3[0], width - margins3[1]])
-            .padding(0.01);
+    // Scale for x axis (sugar)
+    const x3 = d3.scaleBand()
+        .domain(d3.range(numBins))
+        .range([margins3[0], width - margins3[1]])
+        .padding(0.01);
 
-        svg.append("g")
-            .attr("transform", `translate(0, ${height - margins3[3]})`)
-            .call(d3.axisBottom(x3).tickFormat((d, i) => {
-                const bin = sugarBins[i];
-                return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
-            }));
+    svg.append("g")
+        .attr("transform", `translate(0, ${height - margins3[3]})`)
+        .call(d3.axisBottom(x3).tickFormat((d, i) => {
+            const bin = sugarBins[i];
+            return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
+        }));
 
-        // Scale for y axis (rating)
-        const y3 = d3.scaleBand()
-            .domain(d3.range(numBins))
-            .range([height - margins3[2], margins3[3]])
-            .padding(0.01);
+    // Scale for y axis (rating)
+    const y3 = d3.scaleBand()
+        .domain(d3.range(numBins))
+        .range([height - margins3[2], margins3[3]])
+        .padding(0.01);
 
-        svg.append("g")
-            .attr("transform", `translate(${margins3[0]},0)`)
-            .call(d3.axisLeft(y3).tickFormat((d, i) => {
-                const bin = ratingBins[i];
-                return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
-            }));
-        
-        // Títulos para ejes
-        //fuente: https://stackoverflow.com/questions/11189284/d3-axis-labeling
-        SVG3.append("text")
-            .attr("class", "xAxis")
-            .attr("text-anchor", "end")
-            .attr("x", width)
-            .attr("y", 20)
-            .text("Gramos de Azúcar por Porción");
-        
-        //this one is kinda janky - fix if time
-        svg.append("text")
-            .attr("class", "yAxis")
-            .attr("text-anchor", "end")
-            .attr("y", 10)
-            .attr("x", 180)
-            .attr("dy", ".75em")
-            //.attr("transform", "rotate(-90)")
-            .text("Porcentaje de Valoración");
+    svg.append("g")
+        .attr("transform", `translate(${margins3[0]},0)`)
+        .call(d3.axisLeft(y3).tickFormat((d, i) => {
+            const bin = ratingBins[i];
+            return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
+        }));
+    
+    // Títulos para ejes
+    //fuente: https://stackoverflow.com/questions/11189284/d3-axis-labeling
+    SVG3.append("text")
+        .attr("class", "xAxis")
+        .attr("text-anchor", "end")
+        .attr("x", width)
+        .attr("y", 20)
+        .text("Gramos de Azúcar por Porción");
+    
+    //fix if time
+    svg.append("text")
+        .attr("class", "yAxis")
+        .attr("text-anchor", "end")
+        .attr("y", 10)
+        .attr("x", 180)
+        .attr("dy", ".75em")
+        //.attr("transform", "rotate(-90)")
+        .text("Porcentaje de Valoración");
 
-        // Scale for color
-        const colorMap = d3.scaleLinear()
-            .domain([0, maxCount]) 
-            .range(["white", "#DA4167"]);
-            console.log(maxCount)
-        
-        //Scale for hover color (blue)
-        const colorHover = d3.scaleLinear()
-            .domain([0, maxCount]) 
-            .range(["white", "#004b3b"]);
-            console.log(maxCount)
+    // Scale for color
+    const colorMap = d3.scaleLinear()
+        .domain([0, maxCount]) 
+        .range(["white", "#DA4167"]);
+        console.log(maxCount)
+    
+    //Scale for hover color (blue)
+    const colorHover = d3.scaleLinear()
+        .domain([0, maxCount]) 
+        .range(["white", "#004b3b"]);
+        console.log(maxCount)
 
+    //tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
+    let tooltip = d3.select("body").append("div")
+        .style("opacity", 0)
+        .style("width", 200)
+        .style("height", 200)
+        .style("position", "absolute")
+        .style("background", "#96ceb4");
+
+    // Draw rectangles
+    svg.selectAll("rect")
+        .data(cerealCount.flat().map(([count, names], i) => ({
+            x: i % numBins,
+            y: Math.floor(i / numBins),
+            count: count,
+            names: names
+        })))
+        .join(enter => {
+            const rect = enter.append("rect")
+        .attr("x", d => x3(d.x))
+        .attr("y", d => y3(d.y))
+        .attr("width", x3.bandwidth())
+        .attr("height", y3.bandwidth())
+        .style("fill", d => colorMap(d.count))
         //tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
-        let tooltip = d3.select("body").append("div")
-            .style("opacity", 0)
-            .style("width", 200)
-            .style("height", 200)
-            .style("position", "absolute")
-            .style("background", "#96ceb4");
+        rect
+            .on("mouseover", (event, d) => {
+                svg.selectAll("rect")
+                    
+                d3.select(event.currentTarget)
+                    .style("fill", d => colorHover(d.count));
 
-        // Draw rectangles
-        svg.selectAll("rect")
-            .data(cerealCount.flat().map(([count, names], i) => ({
-                x: i % numBins,
-                y: Math.floor(i / numBins),
-                count: count,
-                names: names
-            })))
-            .join(enter => {
-                const rect = enter.append("rect")
-            .attr("x", d => x3(d.x))
-            .attr("y", d => y3(d.y))
-            .attr("width", x3.bandwidth())
-            .attr("height", y3.bandwidth())
-            .style("fill", d => colorMap(d.count))
-            //tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
-            rect
-                .on("mouseover", (event, d) => {
-                    svg.selectAll("rect")
-                        
-                    d3.select(event.currentTarget)
-                        .style("fill", d => colorHover(d.count));
-
-                    tooltip
-                        .html(`Cereales: ${d.names}
-                            `)//OPCIONAL: azúcar y ratings info <brAzúcar: ${}
-                        .style("opacity", 1)
-                        .style("left", (event.pageX + 10) + "px")
+                tooltip
+                    .html(` ${d.names}
+                        `)//OPCIONAL: azúcar y ratings info <brAzúcar: ${}
+                    .style("opacity", 1)
+                    .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 28) + "px");
 
-                }).on("mouseout", (event, d) => {
-                    tooltip.style("opacity", 0);
-                    svg.selectAll("rect")
-                        .style("fill", d => colorMap(d.count));
-                })
+            }).on("mouseout", (event, d) => {
+                tooltip.style("opacity", 0);
+                svg.selectAll("rect")
+                    .style("fill", d => colorMap(d.count));
             })
-    });
+        })
 }
-
-// Llamar a las funciones para crear las visualizaciones
-crearVis1();
-//crearVis2();
-crearVis3();

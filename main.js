@@ -244,7 +244,10 @@ function crearVis3(cereals) {
     console.log(cerealCount);
 
     const svg = d3.select("#chart-heatmap");
+
+    //I THINK THIS IS INCORRECT!! CHANGE BC OF ENUNCIADO
     svg.selectAll("*").remove(); // Limpiar la visualización anterior
+    
     const width = svg.attr("width");
     const height = svg.attr("height");
 

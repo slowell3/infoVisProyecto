@@ -11,8 +11,15 @@
 <body>
     <div class="container">
         <h1>Visualización de Cereales</h1>
+        <p>Esta visualización usa un dataset relacionado con cereales y sus respectivos nombres, distribuidores (marcas), información nutricional y valoración.</p>
+        <p>El propósito de esta página es mostrar la información nutricional de diferentes cereales de distintas marcas para que las personas puedan comparar esta información y ver qué cereal elegir en base a esos parámetros.</p>
+        <p>La fuente original de los datos se encuentra en el siguiente enlace: <a href="https://www.kaggle.com/datasets/crawford/80-cereals">https://www.kaggle.com/datasets/crawford/80-cereals</a></p>
 
         <h2>Visualización 1 - Mapa Radial de Marcas de Cereales</h2>
+        <p>Esta visualización da una vista general de los cereales contenidos en el dataset. Cada barra representa un cereal. El largo de la barra depende de su valoración y el color depende de su marca.</p>
+        <h4>Interacciones:</h4>
+        <p>Hacer <b>hover</b> con el mouse en una barra muestra un tooltip con información adicional del cereal.</p>
+        <p>Hacer <b>clic</b> en una barra despliega la segunda visualización, que muestra los valores nutricionales de los cereales de la marca seleccionada. Esto también cambia la tercera visualización para representar sólo la marca seleccionada.</p>
         <div id="vis-1" class="chart-container">
             <svg width="1000" height="900"></svg>
             <div class="tooltip" id="tooltip-radial"></div>
@@ -21,19 +28,44 @@
 
         <div class="divLine"></div>
         <h2>Visualización 2 - Valores Nutricionales</h2>
-        
+        <p>Este gráfico de barras agrupado presenta la información nutricional de los cereales de una marca en específico.</p>
+        <h4>Interacciones:</h4>
+        <p>El usuario puede seleccionar la marca haciendo clic en la primera visualización.</p>
+        <p>Hacer <b>clic</b> en una barra o más cambiará la visualización para enfatizar el valor seleccionado.</p>
         <div id="vis-2" class="chart-container">
             <svg id="chart-nutrition" width="800" height="800"></svg>
             <div class="legend" id="legend-nutrition"></div>
         </div>
 
         <div class="divLine"></div>
-        <h2>Visualización 3 - Mapa de Calor</h2>
+        <h2>Visualización 3 - Mapa de Calor de Valoración y Azúcar</h2>
+        <p>Esta visualización muestra la relación entre la valoración de cada cereal y su cantidad de azúcar. Un cuadro más oscuro significa una mayor cantidad de cereales en ese rango de azúcar y valoración.</p>
+        <h4>Interacciones:</h4>
+        <p>Se puede especificar una marca en particular seleccionándola en la primera visualización.</p>
+        <p>Hacer <b>hover</b> cambia el color del cuadro y muestra cuáles cereales corresponden al cuadro.</p>
+        <p>También se pueden usar los botones a continuación para filtrar el dataset por nivel de sodio o nivel de estante del cereal en los supermercados.</p>
+        <div>
+            <h3>Filtrar Por</h3>
+            <h5>Nivel de sodio</h5>
+            <button id="AltoSodio">Alto</button>
+            <button id="BajoSodio">Bajo</button>
+        </div>
+        <div>
+            <h5>Nivel de estante</h5>
+            <button id="estante1">1</button>
+            <button id="estante2">2</button>
+            <button id="estante3">3</button>
+        </div>
         <div id="vis-3" class="chart-container">
             <svg id="chart-heatmap" width="800" height="400"></svg>
             <div class="tooltip" id="tooltip-heatmap"></div>
-            <!-- Aquí puedes agregar una leyenda si es necesario -->
+            <div class="legend" id="legend-heatmap"></div>
         </div>
+        <h2>Referencias a código externo:</h2>
+        <p>Cómo agregar títulos para ejes: <a href="https://stackoverflow.com/questions/11189284/d3-axis-labeling">https://stackoverflow.com/questions/11189284/d3-axis-labeling</a></p>
+        <p>Tooltip basado en código de <a href="https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/">https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/</a></p>
+        <p>Mapa de Calor en d3: <a href="https://d3-graph-gallery.com/graph/heatmap_style.html">https://d3-graph-gallery.com/graph/heatmap_style.html</a></p>
+        <p>ChatGPT también fue consultado en varios aspectos de la creación de la visualización.</p>
     </div>
     <script src="main.js"></script>
 </body>

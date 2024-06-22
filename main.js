@@ -2,7 +2,7 @@ const CEREAL = "cereal.csv";
 
 const WIDTH_VIS_1 = 1000;
 const HEIGHT_VIS_1 = 100;
-const WIDTH_VIS_2 = 800;
+const WIDTH_VIS_2 = 1000;
 const HEIGHT_VIS_2 = 800;
 const WIDTH_VIS_3 = 800;
 const HEIGHT_VIS_3 = 400;
@@ -140,16 +140,18 @@ function crearVis2(data) {
     const height = svg.attr("height");
 
     // Ajustar el tamaño del SVG basado en el número de filas
-    const numRows = Math.ceil(data.length / 5);
+    const numCols = 4; // Cambiado a 4 columnas
+    const numRows = Math.ceil(data.length / numCols);
     const rowHeight = 350; // Ajusta según necesidades para más espacio
+    const graphPadding = 10; // Espacio entre gráficos
     svg.attr("height", numRows * rowHeight); // Ajusta altura dinámicamente
 
     const maxBarLength = 300; // Máximo largo de las barras
 
     const x0 = d3.scaleBand()
         .domain(nutrientsToShow)
-        .range([0, width / 5])
-        .padding(0.1);
+        .range([0, (width / numCols) - graphPadding]) // Ajustado para 4 columnas
+        .paddingInner(0); // Remover el padding entre las barras
 
     const y = d3.scaleLinear()
         .domain([0, d3.max(data, cereal => d3.max(nutrientsToShow, n => cereal[n]))])
@@ -157,14 +159,15 @@ function crearVis2(data) {
 
     const groups = data.map((d, i) => ({
         ...d,
-        row: Math.floor(i / 5),
-        col: i % 5
+        row: Math.floor(i / numCols), // Ajustado para 4 columnas
+        col: i % numCols // Ajustado para 4 columnas
     }));
 
-    const groupSelection = svg.selectAll("g")
+    const groupSelection = svg.selectAll(".graph-group")
         .data(groups)
         .enter().append("g")
-        .attr("transform", d => `translate(${d.col * (width / 5)}, ${d.row * rowHeight})`);
+        .attr("class", "graph-group")
+        .attr("transform", d => `translate(${d.col * ((width / numCols) + graphPadding)}, ${d.row * rowHeight})`); // Ajustado para 4 columnas y padding entre gráficos
 
     groupSelection.append("g")
         .selectAll("rect")
@@ -177,10 +180,23 @@ function crearVis2(data) {
         .attr("fill", d => colorsNutrients(d.key));
 
     groupSelection.append("text")
-        .attr("x", width / 10)
-        .attr("y", maxBarLength + 20) // Posicionar el nombre debajo de cada gráfico con un espacio
+        .attr("x", (width / numCols - graphPadding) / 2) // Ajustar posición del texto
+        .attr("y", maxBarLength + 30) // Posicionar el nombre debajo de cada gráfico con un espacio
         .attr("text-anchor", "middle")
         .text(d => d.name);
+
+    groupSelection.each(function(d) {
+        const g = d3.select(this);
+    
+        // Eje X
+        g.append("g")
+            .attr("transform", `translate(0, ${maxBarLength})`)
+            .call(d3.axisBottom(x0));
+    
+            // Eje Y
+        //g.append("g")
+            //.call(d3.axisLeft(y));
+        });
 
     // Añadir leyenda
     const legend = d3.select("#legend-nutrition")
@@ -199,13 +215,16 @@ function crearVis2(data) {
         });
 }
 
+
+
+
 function crearVis3(cereals) {
     console.log(cereals);
 
-    // Define the number of bins
+    // Define número de cajas (bins)
     const numBins = 10;
 
-    // Create bins for sugars
+    // Crear cajas para azúcar
     const sugarExtent = d3.extent(cereals, d => d.sugars);
     const ratingExtent = d3.extent(cereals, d => d.rating);
 
@@ -220,21 +239,21 @@ function crearVis3(cereals) {
         .thresholds(d3.range(ratingExtent[0], ratingExtent[1], (ratingExtent[1] - ratingExtent[0]) / numBins))
         (cereals.map(d => d.rating));
 
-    // Create a 2D array to count cereals in each bin
+    // Array 2D para contar cereales en cada Bin
     const cerealCount = Array.from({ length: numBins }, () =>
         Array.from({ length: numBins }, () => [0, []])
     );
-    
+
     let maxCount = 0;
-    
+
     cereals.map(cereal => {
         const sugarIndex = sugarBins.findIndex(bin => bin.x0 <= cereal.sugars && cereal.sugars < bin.x1);
         const ratingIndex = ratingBins.findIndex(bin => bin.x0 <= cereal.rating && cereal.rating < bin.x1);
-    
+
         if (sugarIndex >= 0 && ratingIndex >= 0) {
             cerealCount[sugarIndex][ratingIndex][0]++;
             cerealCount[sugarIndex][ratingIndex][1].push(cereal.name);
-    
+
             if (cerealCount[sugarIndex][ratingIndex][0] >= maxCount) {
                 maxCount = cerealCount[sugarIndex][ratingIndex][0];
             }
@@ -244,71 +263,72 @@ function crearVis3(cereals) {
     console.log(cerealCount);
 
     const svg = d3.select("#chart-heatmap");
+    const svgLeyenda = d3.select("#legend-heatmap");
 
-    //I THINK THIS IS INCORRECT!! CHANGE BC OF ENUNCIADO
+    //CAMBIAR ESTO A SER EXIT
     svg.selectAll("*").remove(); // Limpiar la visualización anterior
-    
+    svgLeyenda.selectAll("*").remove();
+
     const width = svg.attr("width");
     const height = svg.attr("height");
 
-    // Scale for x axis (sugar)
+    const margins3 = { top: 20, right: 30, bottom: 40, left: 40 }; // Márgenes
+
+    // Escala de X (azúcar)
     const x3 = d3.scaleBand()
         .domain(d3.range(numBins))
-        .range([margins3[0], width - margins3[1]])
+        .range([margins3.left, width - margins3.right])
         .padding(0.01);
 
     svg.append("g")
-        .attr("transform", `translate(0, ${height - margins3[3]})`)
+        .attr("transform", `translate(0, ${height - margins3.bottom})`)
         .call(d3.axisBottom(x3).tickFormat((d, i) => {
             const bin = sugarBins[i];
             return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
         }));
 
-    // Scale for y axis (rating)
+    // Escala de y (rating/valoración)
     const y3 = d3.scaleBand()
         .domain(d3.range(numBins))
-        .range([height - margins3[2], margins3[3]])
+        .range([height - margins3.bottom, margins3.top])
         .padding(0.01);
 
     svg.append("g")
-        .attr("transform", `translate(${margins3[0]},0)`)
+        .attr("transform", `translate(${margins3.left},0)`)
         .call(d3.axisLeft(y3).tickFormat((d, i) => {
             const bin = ratingBins[i];
             return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
         }));
-    
+
     // Títulos para ejes
-    //fuente: https://stackoverflow.com/questions/11189284/d3-axis-labeling
-    SVG3.append("text")
+    // fuente: https://stackoverflow.com/questions/11189284/d3-axis-labeling
+    svg.append("text")
         .attr("class", "xAxis")
         .attr("text-anchor", "end")
         .attr("x", width)
-        .attr("y", 20)
+        .attr("y", height - margins3.bottom + 30)
         .text("Gramos de Azúcar por Porción");
-    
-    //fix if time
+
     svg.append("text")
         .attr("class", "yAxis")
         .attr("text-anchor", "end")
         .attr("y", 10)
-        .attr("x", 180)
+        .attr("x", -40)
         .attr("dy", ".75em")
-        //.attr("transform", "rotate(-90)")
+        .attr("transform", "rotate(-90)")
         .text("Porcentaje de Valoración");
 
-    // Scale for color
+    // Escala de color
     const colorMap = d3.scaleLinear()
-        .domain([0, maxCount]) 
+        .domain([0, maxCount])
         .range(["white", "#DA4167"]);
-        console.log(maxCount)
-    
-    //Scale for hover color (blue)
-    const colorHover = d3.scaleLinear()
-        .domain([0, maxCount]) 
-        .range(["white", "#004b3b"]);
-        console.log(maxCount)
 
-    //tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
+    // Escala de color de hover (azúl)
+    const colorHover = d3.scaleLinear()
+        .domain([0, maxCount])
+        .range(["white", "#004b3b"]);
+
+    // Tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
     let tooltip = d3.select("body").append("div")
         .style("opacity", 0)
         .style("width", 200)
@@ -316,7 +336,7 @@ function crearVis3(cereals) {
         .style("position", "absolute")
         .style("background", "#96ceb4");
 
-    // Draw rectangles
+    // Dibuja rectángulos
     svg.selectAll("rect")
         .data(cerealCount.flat().map(([count, names], i) => ({
             x: i % numBins,
@@ -326,30 +346,77 @@ function crearVis3(cereals) {
         })))
         .join(enter => {
             const rect = enter.append("rect")
-        .attr("x", d => x3(d.x))
-        .attr("y", d => y3(d.y))
-        .attr("width", x3.bandwidth())
-        .attr("height", y3.bandwidth())
-        .style("fill", d => colorMap(d.count))
-        //tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
-        rect
-            .on("mouseover", (event, d) => {
-                svg.selectAll("rect")
-                    
+                .attr("x", d => x3(d.x))
+                .attr("y", d => y3(d.y))
+                .attr("width", x3.bandwidth())
+                .attr("height", y3.bandwidth())
+                .style("fill", d => colorMap(d.count))
+
+            // Tooltip
+            rect.on("mouseover", (event, d) => {
                 d3.select(event.currentTarget)
-                    .style("fill", d => colorHover(d.count));
+                    .style("fill", colorHover(d.count));
 
                 tooltip
-                    .html(` ${d.names}
-                        `)//OPCIONAL: azúcar y ratings info <brAzúcar: ${}
+                    .html(`${d.names}`)
                     .style("opacity", 1)
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 28) + "px");
-
             }).on("mouseout", (event, d) => {
                 tooltip.style("opacity", 0);
-                svg.selectAll("rect")
-                    .style("fill", d => colorMap(d.count));
-            })
-        })
+                d3.select(event.currentTarget)
+                    .style("fill", colorMap(d.count));
+            });
+        });
+
+    // Crear leyenda - código con asistencia de ChatGPT
+    const legendWidth = 300;
+    const legendHeight = 100;
+
+    const leyendaHeat = svgLeyenda.append("svg")
+        .attr("width", legendWidth)
+        .attr("height", legendHeight)
+        .style("display", "block");
+
+    // Título de leyenda
+    leyendaHeat.append("text")
+        .attr("x", legendWidth / 2)
+        .attr("y", 10)
+        .attr("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "bold")
+        .text("Número de cereales");
+
+    const defs = leyendaHeat.append("defs");
+    const linearGradient = defs.append("linearGradient")
+        .attr("id", "linear-gradient");
+
+    linearGradient.selectAll("stop")
+        .data(colorMap.range().map((color, i) => {
+            return {
+                offset: `${(i * 100) / (colorMap.range().length - 1)}%`,
+                color: color
+            };
+        }))
+        .enter().append("stop")
+        .attr("offset", d => d.offset)
+        .attr("stop-color", d => d.color);
+
+    leyendaHeat.append("rect")
+        .attr("x", 20)
+        .attr("y", 20)
+        .attr("width", legendWidth - 40)
+        .attr("height", 20)
+        .style("fill", "url(#linear-gradient)");
+
+    const legendScale = d3.scaleLinear()
+        .domain(colorMap.domain())
+        .range([20, legendWidth - 20]);
+
+    const axisBottom = d3.axisBottom(legendScale)
+        .ticks(5);
+
+    leyendaHeat.append("g")
+        .attr("transform", `translate(0, 40)`)
+        .call(axisBottom);
 }

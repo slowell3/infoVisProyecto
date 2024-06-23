@@ -68,40 +68,41 @@ function crearVis1(data) {
     data.sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabéticamente
 
     const svg = d3.select("#vis-1 svg");
-    const width = svg.attr("width");
-    const height = svg.attr("height");
-    const radius = Math.min(width, height) / 2 - 130; 
+    const width = +svg.attr("width");
+    const height = +svg.attr("height");
+    const radius = Math.min(width, height) / 2 - 130;
 
     const arc = d3.arc()
         .innerRadius(radius - 100)
-        .outerRadius(d => radius - 100 + d.rating * 2.5) 
+        .outerRadius(d => radius - 100 + d.rating * 2.5)
         .startAngle((d, i) => (i * 2 * Math.PI) / data.length)
         .endAngle((d, i) => ((i + 1) * 2 * Math.PI) / data.length);
 
-    const arcs = svg.append("g")
-        .attr("transform", `translate(${width / 2}, ${height / 2})`)
-        .selectAll("path")
+    const arcsGroup = svg.append("g")
+        .attr("transform", `translate(${width / 2}, ${height / 2})`);
+
+    const arcs = arcsGroup.selectAll("path")
         .data(data)
         .enter().append("path")
         .attr("d", arc)
         .attr("fill", d => colors[d.mfr])
         .attr("stroke", "black")
         .attr("stroke-width", 1)
-        .on("mouseover", (event, d) => {
+        .on("mouseover", function (event, d) {
             const tooltip = d3.select("#tooltip-radial");
             tooltip
                 .style("visibility", "visible")
-                .html(`Nombre: ${d.name}<br>Calorías: ${d.calories}<br>Vitaminas: ${d.vitamins}`);
-            
-            tooltip
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px");
-            
-            arcs.attr("fill-opacity", o => o.mfr === d.mfr ? 1 : 0.2);
+                .html(`Nombre: ${d.name}<br>Calorías: ${d.calories}<br>Vitaminas: ${d.vitamins}`)
+                .style("left", `${width/ 1.22}px`)
+                .style("top", `${height / 2}px`)
+                .style("transform", "translate(-50%, -50%)");
+
+            d3.select(this).attr("fill-opacity", 1);
+            arcsGroup.selectAll("path").attr("fill-opacity", o => o.mfr === d.mfr ? 1 : 0.2);
         })
-        .on("mouseout", () => {
+        .on("mouseout", function () {
             d3.select("#tooltip-radial").style("visibility", "hidden");
-            arcs.attr("fill-opacity", 1);
+            arcsGroup.selectAll("path").attr("fill-opacity", 1);
         })
         .on("click", (event, d) => {
             const filteredData = data.filter(c => c.mfr === d.mfr);
@@ -128,16 +129,13 @@ function crearVis1(data) {
 }
 
 function crearVis2(data, nutrientFilter = "all") {
-    d3.select("#chart-nutrition").selectAll("*").remove();
-    d3.select("#legend-nutrition").selectAll("*").remove();
-
     const nutrientsToShow = nutrientFilter === "all" ? nutrients : [nutrientFilter];
 
     const normalizedData = data.map(d => nutrientsToShow.reduce((acc, n) => ({ ...acc, [n]: +d[n] }), { name: d.name }));
 
     const svg = d3.select("#chart-nutrition");
-    const width = svg.attr("width");
-    const height = svg.attr("height");
+    const width = +svg.attr("width");
+    const height = +svg.attr("height");
 
     const numCols = 3; 
     const numRows = Math.ceil(normalizedData.length / numCols);
@@ -162,51 +160,74 @@ function crearVis2(data, nutrientFilter = "all") {
         col: i % numCols 
     }));
 
-    // Añadir leyenda
+    // Actualizar leyenda
     const legend = d3.select("#legend-nutrition");
+    const legendItems = legend.selectAll(".legend-item")
+        .data(nutrientsToShow);
 
-    const legendItems = legend.selectAll("div")
-        .data(nutrientsToShow)
-        .enter().append("div")
-        .attr("class", "legend-item");
+    legendItems.enter().append("div")
+        .attr("class", "legend-item")
+        .merge(legendItems)
+        .html(n => `
+            <div class="legend-color" style="background-color:${colorsNutrients(n)}"></div>
+            <span>${n}</span>
+        `);
 
-    legendItems.append("div")
-        .attr("class", "legend-color")
-        .style("background-color", n => colorsNutrients(n));
-
-    legendItems.append("span")
-        .text(n => n);
+    legendItems.exit().remove();
 
     const groupSelection = svg.selectAll(".graph-group")
-        .data(groups)
-        .enter().append("g")
-        .attr("class", "graph-group")
+        .data(groups);
+
+    const groupEnter = groupSelection.enter().append("g")
+        .attr("class", "graph-group");
+
+    groupSelection.merge(groupEnter)
         .attr("transform", d => `translate(${d.col * ((width / numCols) + graphPadding)}, ${d.row * rowHeight + 40})`);
 
-    groupSelection.append("g")
-        .selectAll("rect")
-        .data(d => nutrientsToShow.map(n => ({ key: n, value: d[n] })))
-        .enter().append("rect")
+    groupSelection.exit().remove();
+
+    const bars = groupSelection.merge(groupEnter).selectAll("rect")
+        .data(d => nutrientsToShow.map(n => ({ key: n, value: d[n] })));
+
+    bars.enter().append("rect")
+        .merge(bars)
         .attr("x", d => x0(d.key))
         .attr("y", d => y(d.value))
         .attr("width", x0.bandwidth())
         .attr("height", d => maxBarLength - y(d.value))
         .attr("fill", d => colorsNutrients(d.key));
 
-    groupSelection.append("text")
+    bars.exit().remove();
+
+    const texts = groupSelection.merge(groupEnter).selectAll("text")
+        .data(d => [d]);
+
+    texts.enter().append("text")
+        .merge(texts)
         .attr("x", (width / numCols - graphPadding) / 2) 
         .attr("y", maxBarLength + 30) 
         .attr("text-anchor", "middle")
         .text(d => d.name);
 
-    groupSelection.append("g")
+    texts.exit().remove();
+
+    const axes = groupSelection.merge(groupEnter).selectAll(".axis")
+        .data(d => [d]);
+
+    axes.enter().append("g")
+        .attr("class", "axis")
+        .merge(axes)
         .attr("transform", `translate(0, ${maxBarLength})`)
         .call(d3.axisBottom(x0));
+
+    axes.exit().remove();
 
     // Ajustar el tamaño del contenedor gris
     d3.select("#vis-2")
         .style("height", `${numRows * rowHeight + legend.node().getBoundingClientRect().height + 1000}px`); 
 }
+
+
 
 function crearVis3(cereals) {
     const numBins = 10;

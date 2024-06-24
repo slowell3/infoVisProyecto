@@ -1,11 +1,11 @@
 const CEREAL = "cereal.csv";
 
 const WIDTH_VIS_1 = 1000;
-const HEIGHT_VIS_1 = 1000;
+const HEIGHT_VIS_1 = 0;
 const WIDTH_VIS_2 = 1000;
 const HEIGHT_VIS_2 = 800;
 const WIDTH_VIS_3 = 800;
-const HEIGHT_VIS_3 = 400;
+const HEIGHT_VIS_3 = 0;
 
 const SVG1 = d3.select("#vis-1").append("svg")
     .attr("width", "100%")
@@ -74,17 +74,6 @@ function crearVis1(data) {
     const height = +svg.attr("height");
     const radius = Math.min(width, height) / 2 - 130;
 
-    //tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/main.js
-    let tooltip = d3.select("body").append("div")
-        .style("opacity", 0)
-        .style("width", 200)
-        .style("height", 50)
-        .style("pointer-events", "none")
-        .style("background", "rgb(117, 168, 234)")
-        .style("border-radius", "8px")
-        .style("padding", "4px")
-        .style("position", "absolute");
-
     const arc = d3.arc()
         .innerRadius(radius - 100)
         .outerRadius(d => radius - 100 + d.rating * 2.5)
@@ -94,7 +83,7 @@ function crearVis1(data) {
     const arcsGroup = svg.append("g")
         .attr("transform", `translate(${width / 2}, ${height / 2})`);
 
-    const arcs = arcsGroup.selectAll("path")
+        const arcs = arcsGroup.selectAll("path")
         .data(data)
         .enter().append("path")
         .attr("d", arc)
@@ -102,19 +91,19 @@ function crearVis1(data) {
         .attr("stroke", "black")
         .attr("stroke-width", 1)
         .on("mouseover", function (event, d) {
+            const tooltip = d3.select("#tooltip-radial");
             tooltip
-                .style("opacity", 1)
+                .style("visibility", "visible")
                 .html(`Nombre: ${d.name}<br>Calorías: ${d.calories}<br>Vitaminas: ${d.vitamins}`)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px")
+                .style("left", `${width/ 1.22}px`)
+                .style("top", `${height / 2}px`)
                 .style("transform", "translate(-50%, -50%)");
 
             d3.select(this).attr("fill-opacity", 1);
             arcsGroup.selectAll("path").attr("fill-opacity", o => o.mfr === d.mfr ? 1 : 0.2);
         })
         .on("mouseout", function () {
-            tooltip
-                .style("opacity", 0)
+            d3.select("#tooltip-radial").style("visibility", "hidden");
             arcsGroup.selectAll("path").attr("fill-opacity", 1);
         })
         .on("click", (event, d) => {
@@ -200,29 +189,37 @@ function crearVis2(data, nutrientFilter = "all") {
     groupSelection.exit().remove();
 
     const bars = groupSelection.merge(groupEnter).selectAll("rect")
-        .data(d => nutrientsToShow.map(n => ({ key: n, value: d[n] })));
+        .data(d => nutrientsToShow.map(n => ({ key: n, value: d[n], col: d.col, row: d.row }))); // Include col and row
 
     bars.enter().append("rect")
         .merge(bars)
+        .transition().duration(500)  // Adding transition to bar updates
         .attr("x", d => x0(d.key))
         .attr("y", d => y(d.value))
         .attr("width", x0.bandwidth())
-        .attr("height", d => maxBarLength - y(d.value))
+        .attr("height", d => maxBarLength - y(d.value < 0 ? 0 : d.value))
         .attr("fill", d => colorsNutrients(d.key));
 
-    bars.exit().remove();
+    bars.exit()
+        .transition().duration(500)  // Adding transition to bar removal
+        .attr("height", 0)
+        .remove();
 
     const texts = groupSelection.merge(groupEnter).selectAll("text")
         .data(d => [d]);
 
     texts.enter().append("text")
         .merge(texts)
+        .transition().duration(500)  // Adding transition to text updates
         .attr("x", (width / numCols - graphPadding) / 2) 
         .attr("y", maxBarLength + 30) 
         .attr("text-anchor", "middle")
         .text(d => d.name);
 
-    texts.exit().remove();
+    texts.exit()
+        .transition().duration(500)  // Adding transition to text removal
+        .attr("opacity", 0)
+        .remove();
 
     const axes = groupSelection.merge(groupEnter).selectAll(".axis")
         .data(d => [d]);
@@ -238,7 +235,38 @@ function crearVis2(data, nutrientFilter = "all") {
     // Ajustar el tamaño del contenedor gris
     d3.select("#vis-2")
         .style("height", `${numRows * rowHeight + legend.node().getBoundingClientRect().height + 1000}px`); 
+    
+    // Brush setup
+    const brush = d3.brush()
+        .extent([[0, 0], [WIDTH_VIS_2, 10000000]])
+        .on("brush", brushed)
+        .on("end", brushed);
+
+    svg.append("g")
+        .attr("class", "brush")
+        .call(brush);
+
+    function brushed(event) {
+        if (!event.selection) return;
+
+        const [[x0, y0], [x1, y1]] = event.selection;
+
+        bars
+            .transition().duration(500)
+            .attr("fill", d => {
+                const barX = x0(d.key) + d.col * ((width / numCols) + graphPadding);
+                const barY = y(d.value) + d.row * rowHeight + 40;
+                return (x0 <= barX && barX <= x1 && y0 <= barY && barY <= y1) ? "orange" : colorsNutrients(d.key);
+            })
+            .attr("opacity", d => {
+                const barX = x0(d.key) + d.col * ((width / numCols) + graphPadding);
+                const barY = y(d.value) + d.row * rowHeight + 40;
+                return (x0 <= barX && barX <= x1 && y0 <= barY && barY <= y1) ? 1 : 0.5;
+            });
+    }
 }
+
+
 
 
 
@@ -298,7 +326,7 @@ function crearVis3(cereals) {
     // Escala de X (azúcar)
     const x3 = d3.scaleBand()
         .domain(d3.range(numBins))
-        .range([margins3.left+100, width - margins3.right])
+        .range([margins3.left + 100, width - margins3.right])
         .padding(0.01);
 
     svg.selectAll(".x-axis").data([null]).join(
@@ -317,7 +345,7 @@ function crearVis3(cereals) {
 
     svg.selectAll(".y-axis").data([null]).join(
         enter => enter.append("g").attr("class", "y-axis")
-    ).attr("transform", `translate(${margins3.left+100},0)`)
+    ).attr("transform", `translate(${margins3.left + 100},0)`)
         .call(d3.axisLeft(y3).tickFormat((d, i) => {
             const bin = ratingBins[i];
             return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
@@ -346,7 +374,7 @@ function crearVis3(cereals) {
         .domain([0, maxCount])
         .range(["white", "#DA4167"]);
 
-    // Escala de color de hover (azúl)
+    // Escala de color de hover (azul)
     const colorHover = d3.scaleLinear()
         .domain([0, maxCount])
         .range(["white", "#004b3b"]);
@@ -469,7 +497,38 @@ function crearVis3(cereals) {
         enter => enter.append("g").attr("class", "legend-axis")
     ).attr("transform", `translate(0, 40)`)
         .call(axisBottom);
+
+    // Brush setup
+    const brush = d3.brush()
+        .extent([[0, 0], [width, height]])
+        .on("brush", brushed)
+        .on("end", brushed);
+
+    svg.append("g")
+        .attr("class", "brush")
+        .call(brush);
+
+    function brushed(event) {
+        if (!event.selection) return;
+
+        const [[x0, y0], [x1, y1]] = event.selection;
+
+        rects
+            .transition().duration(500)
+            .style("fill", d => {
+                const barX = x3(d.x);
+                const barY = y3(d.y);
+                return (x0 <= barX && barX + x3.bandwidth() <= x1 && y0 <= barY && barY + y3.bandwidth() <= y1) ? colorHover(d.count) : colorMap(d.count);
+            })
+            .attr("opacity", d => {
+                const barX = x3(d.x);
+                const barY = y3(d.y);
+                return (x0 <= barX && barX + x3.bandwidth() <= x1 && y0 <= barY && barY + y3.bandwidth() <= y1) ? 1 : 0.5;
+            });
+    }
 }
+
+
 
 
 // Listener para el menú desplegable de nutrientes

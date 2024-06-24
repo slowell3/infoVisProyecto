@@ -32,10 +32,19 @@
         <h4>Interacciones:</h4>
         <p>El usuario puede seleccionar la marca haciendo clic en la primera visualización.</p>
         <p>Hacer <b>clic</b> en una barra o más cambiará la visualización para enfatizar el valor seleccionado.</p>
+        <p>Existe un menú desplegable en caso de que se quiera visualizar la comparación entre cereales en base a un nutriente específico.</p>
+        <label for="nutrient-select">Filtrar por Nutriente:</label>
+        <select id="nutrient-select">
+            <option value="all">Todos los nutrientes</option>
+            <option value="sugars">Azúcares</option>
+            <option value="protein">Proteínas</option>
+            <option value="fiber">Fibra</option>
+            <option value="carbo">Carbohidratos</option>
+        </select>
+
         <div id="vis-2" class="chart-container">
             <div class="legend" id="legend-nutrition"></div>
             <svg id="chart-nutrition" width="1000" height="800"></svg>
-            
         </div>
 
         <div class="divLine"></div>
@@ -67,6 +76,9 @@
         <p>Tooltip basado en código de <a href="https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/">https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/</a></p>
         <p>Mapa de Calor en d3: <a href="https://d3-graph-gallery.com/graph/heatmap_style.html">https://d3-graph-gallery.com/graph/heatmap_style.html</a></p>
         <p>ChatGPT también fue consultado en varios aspectos de la creación de la visualización.</p>
+        <p> Circular barchart: <a href="https://d3-graph-gallery.com/circular_barplot">https://d3-graph-gallery.com/circular_barplot</a></p>
+        <p> Filtrado: <a href= "https://observablehq.com/@thinkh/step-3-interaction-and-filtering">https://observablehq.com/@thinkh/step-3-interaction-and-filteringa</a></p>
+        <p> Grouping data: <a href= "https://d3js.org/d3-array/group">https://d3js.org/d3-array/group</a></p>
     </div>
     <script src="main.js"></script>
 </body>

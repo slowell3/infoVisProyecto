@@ -31,7 +31,9 @@ const parseData = d => ({
     sugars: +d.sugars,
     protein: +d.protein,
     fiber: +d.fiber,
-    carbo: +d.carbo
+    carbo: +d.carbo,
+    sodium: +d.sodium,
+    shelf: +d.shelf
 });
 
 let allData = [];
@@ -230,8 +232,12 @@ function crearVis2(data, nutrientFilter = "all") {
 
 
 function crearVis3(cereals) {
+    console.log(cereals);
+
+    // Define número de cajas (bins)
     const numBins = 10;
 
+    // Crear cajas para azúcar
     const sugarExtent = d3.extent(cereals, d => d.sugars);
     const ratingExtent = d3.extent(cereals, d => d.rating);
 
@@ -239,19 +245,21 @@ function crearVis3(cereals) {
         .domain(sugarExtent)
         .thresholds(d3.range(sugarExtent[0], sugarExtent[1], (sugarExtent[1] - sugarExtent[0]) / numBins))
         (cereals.map(d => d.sugars));
+    console.log(sugarBins);
 
     const ratingBins = d3.histogram()
         .domain(ratingExtent)
         .thresholds(d3.range(ratingExtent[0], ratingExtent[1], (ratingExtent[1] - ratingExtent[0]) / numBins))
         (cereals.map(d => d.rating));
 
+    // Array 2D para contar cereales en cada Bin
     const cerealCount = Array.from({ length: numBins }, () =>
         Array.from({ length: numBins }, () => [0, []])
     );
 
     let maxCount = 0;
 
-    cereals.map(cereal => {
+    cereals.forEach(cereal => {
         const sugarIndex = sugarBins.findIndex(bin => bin.x0 <= cereal.sugars && cereal.sugars < bin.x1);
         const ratingIndex = ratingBins.findIndex(bin => bin.x0 <= cereal.rating && cereal.rating < bin.x1);
 
@@ -265,131 +273,176 @@ function crearVis3(cereals) {
         }
     });
 
+    console.log(cerealCount);
+
     const svg = d3.select("#chart-heatmap");
     const svgLeyenda = d3.select("#legend-heatmap");
 
-    svg.selectAll("*").remove();
-    svgLeyenda.selectAll("*").remove();
-
+    // Limpiar la visualización anterior utilizando enter/update/exit
     const width = svg.attr("width");
     const height = svg.attr("height");
 
-    const margins3 = { top: 20, right: 30, bottom: 40, left: 40 };
+    const margins3 = { top: 20, right: 30, bottom: 40, left: 40 }; // Márgenes
 
+    // Escala de X (azúcar)
     const x3 = d3.scaleBand()
         .domain(d3.range(numBins))
         .range([margins3.left, width - margins3.right])
         .padding(0.01);
 
-    svg.append("g")
-        .attr("transform", `translate(0, ${height - margins3.bottom})`)
+    svg.selectAll(".x-axis").data([null]).join(
+        enter => enter.append("g").attr("class", "x-axis")
+    ).attr("transform", `translate(0, ${height - margins3.bottom})`)
         .call(d3.axisBottom(x3).tickFormat((d, i) => {
             const bin = sugarBins[i];
             return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
         }));
 
+    // Escala de y (rating/valoración)
     const y3 = d3.scaleBand()
         .domain(d3.range(numBins))
         .range([height - margins3.bottom, margins3.top])
         .padding(0.01);
 
-    svg.append("g")
-        .attr("transform", `translate(${margins3.left},0)`)
+    svg.selectAll(".y-axis").data([null]).join(
+        enter => enter.append("g").attr("class", "y-axis")
+    ).attr("transform", `translate(${margins3.left},0)`)
         .call(d3.axisLeft(y3).tickFormat((d, i) => {
             const bin = ratingBins[i];
             return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
         }));
 
-    svg.append("text")
-        .attr("class", "xAxis")
-        .attr("text-anchor", "end")
-        .attr("x", width -290)
+    // Títulos para ejes
+    // fuente: https://stackoverflow.com/questions/11189284/d3-axis-labeling
+    svg.selectAll(".xAxis-label").data([null]).join(
+        enter => enter.append("text").attr("class", "xAxis-label")
+    ).attr("text-anchor", "end")
+        .attr("x", width)
         .attr("y", height - margins3.bottom + 30)
         .text("Gramos de Azúcar por Porción");
 
-    svg.append("text")
-        .attr("class", "yAxis")
-        .attr("text-anchor", "end")
+    svg.selectAll(".yAxis-label").data([null]).join(
+        enter => enter.append("text").attr("class", "yAxis-label")
+    ).attr("text-anchor", "end")
         .attr("y", -10)
         .attr("x", -40)
         .attr("dy", ".75em")
         .attr("transform", "rotate(-90)")
         .text("Porcentaje de Valoración");
 
+    // Escala de color
     const colorMap = d3.scaleLinear()
         .domain([0, maxCount])
         .range(["white", "#DA4167"]);
 
+    // Escala de color de hover (azúl)
     const colorHover = d3.scaleLinear()
         .domain([0, maxCount])
         .range(["white", "#004b3b"]);
 
-    let tooltip = d3.select("body").append("div")
-        .style("opacity", 0)
+    // Tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
+    let tooltip = d3.select("body").selectAll(".tooltip").data([null]).join(
+        enter => enter.append("div").attr("class", "tooltip")
+    ).style("opacity", 0)
         .style("width", 200)
         .style("height", 200)
         .style("position", "absolute")
         .style("background", "#96ceb4");
 
-    svg.selectAll("rect")
+    // Dibuja rectángulos
+    const rects = svg.selectAll("rect")
         .data(cerealCount.flat().map(([count, names], i) => ({
             x: i % numBins,
             y: Math.floor(i / numBins),
             count: count,
             names: names
-        })))
-        .enter().append("rect")
-        .attr("x", d => x3(d.x))
-        .attr("y", d => y3(d.y))
-        .attr("width", x3.bandwidth())
-        .attr("height", y3.bandwidth())
-        .style("fill", d => colorMap(d.count))
-        .on("mouseover", (event, d) => {
-            d3.select(event.currentTarget)
-                .style("fill", colorHover(d.count));
+        })));
 
-            tooltip
-                .html(`${d.names}`)
-                .style("opacity", 1)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px");
-        }).on("mouseout", (event, d) => {
-            tooltip.style("opacity", 0);
-            d3.select(event.currentTarget)
-                .style("fill", colorMap(d.count));
-        });
+    rects.join(
+        enter => {
+            const rect = enter.append("rect")
+                .attr("x", d => x3(d.x))
+                .attr("y", d => y3(d.y))
+                .attr("width", x3.bandwidth())
+                .attr("height", y3.bandwidth())
+                .style("fill", d => colorMap(d.count));
 
+            // Tooltip
+            rect.on("mouseover", (event, d) => {
+                d3.select(event.currentTarget)
+                    .style("fill", colorHover(d.count));
+
+                tooltip
+                    .html(`${d.names}`)
+                    .style("opacity", 1)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            }).on("mouseout", (event, d) => {
+                tooltip.style("opacity", 0);
+                d3.select(event.currentTarget)
+                    .style("fill", colorMap(d.count));
+            });
+        },
+        update => {
+            update.transition("update_vis3")
+                .duration(500)
+                .attr("x", d => x3(d.x))
+                .attr("y", d => y3(d.y))
+                .attr("width", x3.bandwidth())
+                .attr("height", y3.bandwidth())
+                .style("fill", d => colorMap(d.count));
+        },
+        exit => {
+            exit.transition("exit_vis3")
+                .duration(500)
+                .style("opacity", 0)
+                .remove();
+        }
+    );
+
+    // Crear leyenda - código con asistencia de ChatGPT
     const legendWidth = 300;
     const legendHeight = 100;
 
-    const leyendaHeat = svgLeyenda.append("svg")
-        .attr("width", legendWidth)
+    const leyendaHeat = svgLeyenda.selectAll("svg").data([null]).join(
+        enter => enter.append("svg")
+    ).attr("width", legendWidth)
         .attr("height", legendHeight)
         .style("display", "block");
 
-    leyendaHeat.append("text")
-        .attr("x", legendWidth / 2)
+    // Título de leyenda
+    leyendaHeat.selectAll(".legend-title").data([null]).join(
+        enter => enter.append("text").attr("class", "legend-title")
+    ).attr("x", legendWidth / 2)
         .attr("y", 10)
         .attr("text-anchor", "middle")
         .style("font-size", "14px")
         .style("font-weight", "bold")
         .text("Número de cereales");
 
-    const defs = leyendaHeat.append("defs");
-    const linearGradient = defs.append("linearGradient")
-        .attr("id", "linear-gradient");
+    const defs = leyendaHeat.selectAll("defs").data([null]).join(
+        enter => enter.append("defs")
+    );
+    const linearGradient = defs.selectAll("#linear-gradient").data([null]).join(
+        enter => enter.append("linearGradient").attr("id", "linear-gradient")
+    );
 
     linearGradient.selectAll("stop")
-        .data(colorMap.range().map((color, i) => ({
-            offset: `${(i * 100) / (colorMap.range().length - 1)}%`,
-            color: color
-        })))
-        .enter().append("stop")
+        .data(colorMap.range().map((color, i) => {
+            return {
+                offset: `${(i * 100) / (colorMap.range().length - 1)}%`,
+                color: color
+            };
+        }))
+        .join(
+            enter => enter.append("stop")
+        )
         .attr("offset", d => d.offset)
         .attr("stop-color", d => d.color);
 
-    leyendaHeat.append("rect")
-        .attr("x", 20)
+    leyendaHeat.selectAll("rect").data([null]).join(
+        enter => enter.append("rect")
+    ).attr("x", 20)
         .attr("y", 20)
         .attr("width", legendWidth - 40)
         .attr("height", 20)
@@ -402,10 +455,12 @@ function crearVis3(cereals) {
     const axisBottom = d3.axisBottom(legendScale)
         .ticks(5);
 
-    leyendaHeat.append("g")
-        .attr("transform", `translate(0, 40)`)
+    leyendaHeat.selectAll(".legend-axis").data([null]).join(
+        enter => enter.append("g").attr("class", "legend-axis")
+    ).attr("transform", `translate(0, 40)`)
         .call(axisBottom);
 }
+
 
 // Listener para el menú desplegable de nutrientes
 d3.select("#nutrient-select").on("change", function() {
@@ -414,5 +469,63 @@ d3.select("#nutrient-select").on("change", function() {
         crearVis2(selectedBrandData, selectedNutrient); // Usar los datos de la marca seleccionada
     } else {
         crearVis2(allData, selectedNutrient); // Usar todos los datos si no se ha seleccionado ninguna marca
+    }
+});
+
+//Listener para los botones de Vis3 Sodio
+//Listener para AltoSodio botón
+d3.select("#AltoSodio").on("click", () => {
+    if (selectedBrandData.length > 0) {
+        const altoSodioDatos = selectedBrandData.filter(c => c.sodium >= 160);
+        console.log(altoSodioDatos);
+        crearVis3(altoSodioDatos);
+    } else {
+        const altoSodioDatos = allData.filter(c => c.sodium >= 160);
+        crearVis3(altoSodioDatos);
+    }
+});
+
+// Listener para BajoSodio botón
+d3.select("#BajoSodio").on("click", () => {
+    if (selectedBrandData.length > 0) {
+        const bajoSodioDatos = selectedBrandData.filter(c => c.sodium < 160);
+        console.log(bajoSodioDatos);
+        crearVis3(bajoSodioDatos);
+    } else {
+        const bajoSodioDatos = allData.filter(c => c.sodium < 160);
+        crearVis3(bajoSodioDatos);
+    }
+});
+
+// Listener para estante1 botón
+d3.select("#estante1").on("click", () => {
+    if (allData.length > 0) {
+        const estante1Datos = allData.filter(c => c.shelf === 1);
+        console.log(estante1Datos);
+        crearVis3(estante1Datos);
+    } else {
+        console.error("allData is empty");
+    }
+});
+
+// Listener para estante2 botón
+d3.select("#estante2").on("click", () => {
+    if (allData.length > 0) {
+        const estante2Datos = allData.filter(c => c.shelf === 2);
+        console.log(estante2Datos);
+        crearVis3(estante2Datos);
+    } else {
+        console.error("allData is empty");
+    }
+});
+
+// Listener para estante3 botón
+d3.select("#estante3").on("click", () => {
+    if (allData.length > 0) {
+        const estante3Datos = allData.filter(c => c.shelf === 3);
+        console.log(estante3Datos);
+        crearVis3(estante3Datos);
+    } else {
+        console.error("allData is empty");
     }
 });

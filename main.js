@@ -74,6 +74,17 @@ function crearVis1(data) {
     const height = +svg.attr("height");
     const radius = Math.min(width, height) / 2 - 130;
 
+    //tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/main.js
+    let tooltip = d3.select("body").append("div")
+        .style("opacity", 0)
+        .style("width", 200)
+        .style("height", 50)
+        .style("pointer-events", "none")
+        .style("background", "rgb(117, 168, 234)")
+        .style("border-radius", "8px")
+        .style("padding", "4px")
+        .style("position", "absolute");
+
     const arc = d3.arc()
         .innerRadius(radius - 100)
         .outerRadius(d => radius - 100 + d.rating * 2.5)
@@ -91,19 +102,19 @@ function crearVis1(data) {
         .attr("stroke", "black")
         .attr("stroke-width", 1)
         .on("mouseover", function (event, d) {
-            const tooltip = d3.select("#tooltip-radial");
             tooltip
-                .style("visibility", "visible")
+                .style("opacity", 1)
                 .html(`Nombre: ${d.name}<br>Calorías: ${d.calories}<br>Vitaminas: ${d.vitamins}`)
-                .style("left", `${width/ 1.22}px`)
-                .style("top", `${height / 2}px`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px")
                 .style("transform", "translate(-50%, -50%)");
 
             d3.select(this).attr("fill-opacity", 1);
             arcsGroup.selectAll("path").attr("fill-opacity", o => o.mfr === d.mfr ? 1 : 0.2);
         })
         .on("mouseout", function () {
-            d3.select("#tooltip-radial").style("visibility", "hidden");
+            tooltip
+                .style("opacity", 0)
             arcsGroup.selectAll("path").attr("fill-opacity", 1);
         })
         .on("click", (event, d) => {
@@ -287,7 +298,7 @@ function crearVis3(cereals) {
     // Escala de X (azúcar)
     const x3 = d3.scaleBand()
         .domain(d3.range(numBins))
-        .range([margins3.left, width - margins3.right])
+        .range([margins3.left+100, width - margins3.right])
         .padding(0.01);
 
     svg.selectAll(".x-axis").data([null]).join(
@@ -306,7 +317,7 @@ function crearVis3(cereals) {
 
     svg.selectAll(".y-axis").data([null]).join(
         enter => enter.append("g").attr("class", "y-axis")
-    ).attr("transform", `translate(${margins3.left},0)`)
+    ).attr("transform", `translate(${margins3.left+100},0)`)
         .call(d3.axisLeft(y3).tickFormat((d, i) => {
             const bin = ratingBins[i];
             return `${Math.round(bin.x0)} - ${Math.round(bin.x1)}`;
@@ -324,7 +335,7 @@ function crearVis3(cereals) {
     svg.selectAll(".yAxis-label").data([null]).join(
         enter => enter.append("text").attr("class", "yAxis-label")
     ).attr("text-anchor", "end")
-        .attr("y", -10)
+        .attr("y", 70)
         .attr("x", -40)
         .attr("dy", ".75em")
         .attr("transform", "rotate(-90)")
@@ -341,9 +352,8 @@ function crearVis3(cereals) {
         .range(["white", "#004b3b"]);
 
     // Tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
-    let tooltip = d3.select("body").selectAll(".tooltip").data([null]).join(
-        enter => enter.append("div").attr("class", "tooltip")
-    ).style("opacity", 0)
+    let tooltip = d3.select("body").append("div")
+        .style("opacity", 0)
         .style("width", 200)
         .style("height", 200)
         .style("position", "absolute")

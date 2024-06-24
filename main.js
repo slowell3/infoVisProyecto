@@ -193,7 +193,7 @@ function crearVis2(data, nutrientFilter = "all") {
 
     bars.enter().append("rect")
         .merge(bars)
-        .transition().duration(500)  // Adding transition to bar updates
+        .transition().duration(500)
         .attr("x", d => x0(d.key))
         .attr("y", d => y(d.value))
         .attr("width", x0.bandwidth())
@@ -201,7 +201,7 @@ function crearVis2(data, nutrientFilter = "all") {
         .attr("fill", d => colorsNutrients(d.key));
 
     bars.exit()
-        .transition().duration(500)  // Adding transition to bar removal
+        .transition().duration(500)
         .attr("height", 0)
         .remove();
 
@@ -210,14 +210,14 @@ function crearVis2(data, nutrientFilter = "all") {
 
     texts.enter().append("text")
         .merge(texts)
-        .transition().duration(500)  // Adding transition to text updates
+        .transition().duration(500)
         .attr("x", (width / numCols - graphPadding) / 2) 
         .attr("y", maxBarLength + 30) 
         .attr("text-anchor", "middle")
         .text(d => d.name);
 
     texts.exit()
-        .transition().duration(500)  // Adding transition to text removal
+        .transition().duration(500)
         .attr("opacity", 0)
         .remove();
 
@@ -235,39 +235,8 @@ function crearVis2(data, nutrientFilter = "all") {
     // Ajustar el tamaño del contenedor gris
     d3.select("#vis-2")
         .style("height", `${numRows * rowHeight + legend.node().getBoundingClientRect().height + 1000}px`); 
-    
-    // Brush setup
-    const brush = d3.brush()
-        .extent([[0, 0], [WIDTH_VIS_2, 10000000]])
-        .on("brush", brushed)
-        .on("end", brushed);
 
-    svg.append("g")
-        .attr("class", "brush")
-        .call(brush);
-
-    function brushed(event) {
-        if (!event.selection) return;
-
-        const [[x0, y0], [x1, y1]] = event.selection;
-
-        bars
-            .transition().duration(500)
-            .attr("fill", d => {
-                const barX = x0(d.key) + d.col * ((width / numCols) + graphPadding);
-                const barY = y(d.value) + d.row * rowHeight + 40;
-                return (x0 <= barX && barX <= x1 && y0 <= barY && barY <= y1) ? "orange" : colorsNutrients(d.key);
-            })
-            .attr("opacity", d => {
-                const barX = x0(d.key) + d.col * ((width / numCols) + graphPadding);
-                const barY = y(d.value) + d.row * rowHeight + 40;
-                return (x0 <= barX && barX <= x1 && y0 <= barY && barY <= y1) ? 1 : 0.5;
-            });
-    }
 }
-
-
-
 
 
 function crearVis3(cereals) {
@@ -317,7 +286,6 @@ function crearVis3(cereals) {
     const svg = d3.select("#chart-heatmap");
     const svgLeyenda = d3.select("#legend-heatmap");
 
-    // Limpiar la visualización anterior utilizando enter/update/exit
     const width = svg.attr("width");
     const height = svg.attr("height");
 
@@ -374,18 +342,20 @@ function crearVis3(cereals) {
         .domain([0, maxCount])
         .range(["white", "#DA4167"]);
 
-    // Escala de color de hover (azul)
+    // Escala de color de brush (azul)
     const colorHover = d3.scaleLinear()
         .domain([0, maxCount])
         .range(["white", "#004b3b"]);
 
     // Tooltip basado en código de https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/
+    /*
     let tooltip = d3.select("body").append("div")
         .style("opacity", 0)
         .style("width", 200)
         .style("height", 200)
         .style("position", "absolute")
         .style("background", "#96ceb4");
+*/
 
     // Dibuja rectángulos
     const rects = svg.selectAll("rect")
@@ -406,6 +376,7 @@ function crearVis3(cereals) {
                 .style("fill", d => colorMap(d.count));
 
             // Tooltip
+            /*
             rect.on("mouseover", (event, d) => {
                 d3.select(event.currentTarget)
                     .style("fill", colorHover(d.count));
@@ -420,6 +391,7 @@ function crearVis3(cereals) {
                 d3.select(event.currentTarget)
                     .style("fill", colorMap(d.count));
             });
+            */
         },
         update => {
             update.transition("update_vis3")
@@ -498,7 +470,7 @@ function crearVis3(cereals) {
     ).attr("transform", `translate(0, 40)`)
         .call(axisBottom);
 
-    // Brush setup
+    // Brush: con ayuda de ChatGPT y código de https://github.com/PUC-Infovis/Syllabus-2024-1/blob/main/Codigos/20-Brushing_y_agregacion.js/1.brush.js
     const brush = d3.brush()
         .extent([[0, 0], [width, height]])
         .on("brush", brushed)

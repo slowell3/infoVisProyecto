@@ -19,7 +19,7 @@
         <p>Esta visualización da una vista general de los cereales contenidos en el dataset. Cada barra representa un cereal. El largo de la barra depende de su valoración y el color depende de su marca.</p>
         <h4>Interacciones:</h4>
         <p>Hacer <b>hover</b> con el mouse en una barra muestra un tooltip con información adicional del cereal.</p>
-        <p>Hacer <b>clic</b> en una barra despliega la segunda visualización, que muestra los valores nutricionales de los cereales de la marca seleccionada. Esto también cambia la tercera visualización para representar sólo la marca seleccionada.</p>
+        <p>Hacer <b>clic</b> en una barra cambia la segunda y tercera visualización para representar sólo la marca seleccionada.</p>
         <div id="vis-1" class="chart-container">
             <svg width="1000" height="900"></svg>
             <div class="tooltip" id="tooltip-radial"></div>
@@ -31,7 +31,6 @@
         <p>Este gráfico de barras agrupado presenta la información nutricional de los cereales de una marca en específico.</p>
         <h4>Interacciones:</h4>
         <p>El usuario puede seleccionar la marca haciendo clic en la primera visualización.</p>
-        <p>Hacer <b>clic</b> en una barra o más cambiará la visualización para enfatizar el valor seleccionado.</p>
         <p>Existe un menú desplegable en caso de que se quiera visualizar la comparación entre cereales en base a un nutriente específico.</p>
         <label for="nutrient-select">Filtrar por Nutriente:</label>
         <select id="nutrient-select">
@@ -52,8 +51,8 @@
         <p>Esta visualización muestra la relación entre la valoración de cada cereal y su cantidad de azúcar. Un cuadro más oscuro significa una mayor cantidad de cereales en ese rango de azúcar y valoración.</p>
         <h4>Interacciones:</h4>
         <p>Se puede especificar una marca en particular seleccionándola en la primera visualización.</p>
-        <p>Hacer <b>hover</b> cambia el color del cuadro y muestra cuáles cereales corresponden al cuadro.</p>
-        <p>También se pueden usar los botones a continuación para filtrar el dataset por nivel de sodio o nivel de estante del cereal en los supermercados.</p>
+        <p>Seleccionar cuadros con <b>brush</b> cambia el color del cuadro.</p>
+        <p>También se pueden usar los botones a continuación para filtrar el dataset por nivel de sodio para cereales de la marca seleccionada, o nivel de estante en los supermercados para el dataset completo.</p>
         <div>
             <h3>Filtrar Por</h3>
             <h5>Nivel de sodio</h5>
@@ -76,9 +75,10 @@
         <p>Tooltip basado en código de <a href="https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/">https://hernan4444.github.io/iic2026/otros/barchart-with-piechart/</a></p>
         <p>Mapa de Calor en d3: <a href="https://d3-graph-gallery.com/graph/heatmap_style.html">https://d3-graph-gallery.com/graph/heatmap_style.html</a></p>
         <p>ChatGPT también fue consultado en varios aspectos de la creación de la visualización.</p>
-        <p> Circular barchart: <a href="https://d3-graph-gallery.com/circular_barplot">https://d3-graph-gallery.com/circular_barplot</a></p>
-        <p> Filtrado: <a href= "https://observablehq.com/@thinkh/step-3-interaction-and-filtering">https://observablehq.com/@thinkh/step-3-interaction-and-filteringa</a></p>
-        <p> Grouping data: <a href= "https://d3js.org/d3-array/group">https://d3js.org/d3-array/group</a></p>
+        <p>Circular barchart: <a href="https://d3-graph-gallery.com/circular_barplot">https://d3-graph-gallery.com/circular_barplot</a></p>
+        <p>Filtrado: <a href= "https://observablehq.com/@thinkh/step-3-interaction-and-filtering">https://observablehq.com/@thinkh/step-3-interaction-and-filteringa</a></p>
+        <p>Grouping data: <a href= "https://d3js.org/d3-array/group">https://d3js.org/d3-array/group</a></p>
+        <p>Brush: <a href="https://github.com/PUC-Infovis/Syllabus-2024-1/blob/main/Codigos/20-Brushing_y_agregacion.js/1.brush.js">https://github.com/PUC-Infovis/Syllabus-2024-1/blob/main/Codigos/20-Brushing_y_agregacion.js/1.brush.js</a></p>
     </div>
     <script src="main.js"></script>
 </body>
